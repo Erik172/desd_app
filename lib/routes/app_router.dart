@@ -1,3 +1,4 @@
+import 'package:desd_app/screens/admin/admin_page.dart';
 import 'package:desd_app/screens/auditoria/auditoria_page.dart';
 import 'package:desd_app/screens/auth/login/login_page.dart';
 import 'package:desd_app/screens/config/config_page.dart';
@@ -43,6 +44,11 @@ final router = GoRouter(
     GoRoute(
       path: '/configuracion',
       builder: (context, state) => const ConfigPage(),
+    ),
+
+    GoRoute(
+      path: '/admin',
+      builder: (context, state) => const AdminPage(),
     ),
   ],
   redirect: (context, state) async {

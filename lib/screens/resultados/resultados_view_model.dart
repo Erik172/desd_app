@@ -2,12 +2,14 @@
 
 import 'dart:async';
 import 'package:desd_app/services/result_service.dart';
+import 'package:desd_app/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class ResultadosViewModel extends ChangeNotifier {
   final BuildContext context;
   final ResultService resultService = ResultService();
+  final UserService userService = UserService();
   final ScrollController scrollController = ScrollController();
   List<dynamic> results = [];
   int currentPage = 1;
@@ -15,9 +17,13 @@ class ResultadosViewModel extends ChangeNotifier {
   bool hasMore = true;
   int totalResults = 0;
   Timer? timer;
+  int? userId;
 
   ResultadosViewModel(this.context) {
-    fetchResults();
+    userService.me().then((user) {
+      userId = user['id'];
+      fetchResults(); // Fetch results for the new user
+    });
 
     scrollController.addListener(() {
       if (scrollController.position.pixels == scrollController.position.maxScrollExtent && hasMore) {
@@ -58,10 +64,11 @@ class ResultadosViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await resultService.fetchResults(context: context, page: currentPage, perPage: 50);
-      totalResults = response['total'];
+      final response = await resultService.fetchResults(context: context, page: 1, userId: userId);
       results = response['results']; // Actualizar la lista de resultados
+      totalResults = response['total'];
       hasMore = currentPage < response['pages'];
+      currentPage = 1;
     } catch (e) {
       print('Error fetching results: $e');
     } finally {
@@ -95,7 +102,7 @@ class ResultadosViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await resultService.fetchResults(context: context, page: currentPage + 1, perPage: 50);
+      final response = await resultService.fetchResults(context: context, page: currentPage + 1, userId: userId);
       totalResults = response['total'];
       results.addAll(response['results']); // Agregar más resultados a la lista
       hasMore = currentPage < response['pages'];
@@ -135,6 +142,7 @@ class ResultadosViewModel extends ChangeNotifier {
         context: context,
         page: currentPage,
         perPage: 50, // Ajusta este valor según la cantidad que se muestra por página
+        userId: userId,
       );
 
       totalResults = response['total'];

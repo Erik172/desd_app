@@ -1,5 +1,7 @@
 import 'package:desd_app/providers/navigation_provider.dart';
+import 'package:desd_app/services/user_service.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class CommonNavegationRail extends StatefulWidget {
@@ -21,7 +23,21 @@ class CommonNavegationRail extends StatefulWidget {
 }
 
 class _CommonNavegationRailState extends State<CommonNavegationRail> {
+  final UserService _userService = UserService();
   bool isAdmin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAdmin();
+  }
+
+  Future<void> _checkAdmin() async {
+    final adminStatus = await _userService.isAdmin();
+    setState(() {
+      isAdmin = adminStatus;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +85,15 @@ class _CommonNavegationRailState extends State<CommonNavegationRail> {
               //   label: Text('Configuracion'),
               // ),
             ],
+            trailing: isAdmin
+                ? IconButton(
+                    icon: const Icon(Icons.admin_panel_settings),
+                    onPressed: () {
+                      context.push('/admin');
+                    },
+                    tooltip: 'Admin Panel Page',
+                  )
+                : null,
           );
         },
       ),
