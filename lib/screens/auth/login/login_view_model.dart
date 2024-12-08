@@ -50,7 +50,7 @@ class LoginViewModel extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final String token = data['token'];
+        final String token = data['access_token'];
 
         await _secureStorage.write(key: 'token', value: token);
 
