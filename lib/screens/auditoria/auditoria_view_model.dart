@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'dart:io';
+import 'dart:async';
 import 'package:desd_app/services/file_service.dart';
 import 'package:desd_app/services/result_service.dart';
 import 'package:desd_app/utils/constants.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AuditoriaViewModel extends ChangeNotifier {
   final FileService _fileService = FileService();
@@ -15,9 +17,13 @@ class AuditoriaViewModel extends ChangeNotifier {
   int _numFiles = 0;
   bool _isProcessing = false;
   Map<String, dynamic> _status = {};
+  double _progress = 0.0;
+  String _currentFile = '';
 
   final List<String> _models = ['Rotacion', 'Inclinacion', 'Corte informacion'];
   final List<String> _selectedModels = [];
+
+  Timer? _progressTimer;
 
   List<String> get models => _models;
   List<String> get selectedModels => _selectedModels;
@@ -26,7 +32,8 @@ class AuditoriaViewModel extends ChangeNotifier {
   int get numFiles => _numFiles;
   bool get isProcessing => _isProcessing;
   Map<String, dynamic> get status => _status;
-
+  double get progress => _progress;
+  String get currentFile => _currentFile;
 
   void toggleModelSelection(String model) {
     if (_selectedModels.contains(model)) {
@@ -38,18 +45,6 @@ class AuditoriaViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Selecciona un directorio utilizando el servicio de archivos y actualiza
-  /// el estado con la información del directorio seleccionado.
-  ///
-  /// Este método abre un selector de directorios para que el usuario elija
-  /// un directorio. Si el usuario no selecciona un directorio, el método
-  /// termina sin hacer nada. Si se selecciona un directorio, se verifica
-  /// que exista y se obtiene la lista de archivos dentro del directorio
-  /// de manera recursiva (sin seguir enlaces simbólicos).
-  ///
-  /// Luego, se actualiza la variable `_selectedDirectory` con la ruta del
-  /// directorio seleccionado y `_numFiles` con el número de archivos en
-  /// el directorio. Finalmente, se notifica a los oyentes del cambio de estado.
   Future<void> pickDirectory() async {
     final selectedDirectory = await _fileService.pickDirectory();
     if (selectedDirectory == null) return;
@@ -64,18 +59,6 @@ class AuditoriaViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Procesa los archivos seleccionados y los envía a la API para su auditoría.
-  ///
-  /// Muestra mensajes de error si no se ha seleccionado un directorio o al menos un modelo.
-  /// Utiliza `FlutterSecureStorage` para obtener el token de autenticación.
-  /// Envía una solicitud `MultipartRequest` con los archivos y modelos seleccionados.
-  /// Muestra un mensaje de éxito o error según la respuesta de la API.
-  ///
-  /// Parámetros:
-  /// - `context`: El contexto de la aplicación.
-  ///
-  /// Retorna:
-  /// - `Future<void>`: Un futuro que se completa cuando se ha procesado la solicitud.
   Future<void> processFiles(BuildContext context) async {
     if (_selectedDirectory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,6 +81,11 @@ class AuditoriaViewModel extends ChangeNotifier {
     _isProcessing = true;
     notifyListeners();
 
+    // Start the timer to update progress every second
+    _progressTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _updateProgress(context);
+    });
+
     const FlutterSecureStorage secureStorage = FlutterSecureStorage();
     final String? token = await secureStorage.read(key: 'token');
 
@@ -112,33 +100,55 @@ class AuditoriaViewModel extends ChangeNotifier {
     _numFiles = filesPaths.length;
     notifyListeners();
 
+    // Comprimir los archivos en un archivo ZIP
+    final zipFilePath = await _fileService.createZip(files: filesPaths);
+    if (zipFilePath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error al comprimir los archivos.'),
+        ),
+      );
+      _isProcessing = false;
+      notifyListeners();
+      return;
+    }
+
     final uri = Uri.parse('${Constants.apiBaseUrl}/api/v1/desd');
 
     final request = http.MultipartRequest('POST', uri);
     request.headers['Authorization'] = 'Bearer $token';
-    // pasar los modelos seleccionados a lowercase
     request.fields['models'] = _selectedModels.map((model) => model.toLowerCase()).join(',');
-    // generar un id aleatorio para la auditoria
-    // request.fields['result_id'] = DateTime.now().millisecondsSinceEpoch.toString();
     request.fields['result_id'] = generateId(path: _selectedDirectory!);
 
     _resultId = request.fields['result_id'];
     notifyListeners();
 
-    for (var filePath in filesPaths) {
-      final file = File(filePath);
-      final fileStream = http.ByteStream(file.openRead());
-      final length = await file.length();
-      final multipartFile = http.MultipartFile(
-        'files',
-        fileStream,
-        length,
-        filename: file.uri.pathSegments.last,
-      );
-      request.files.add(multipartFile);
-    }
+    // Añadir el archivo ZIP al request
+    final zipFile = File(zipFilePath);
+    final fileStream = http.ByteStream(zipFile.openRead());
+    final length = await zipFile.length();
+    final multipartFile = http.MultipartFile(
+      'files',
+      fileStream,
+      length,
+      filename: File(zipFilePath).uri.pathSegments.last,
+    );
+    request.files.add(multipartFile);
 
     final response = await request.send();
+
+    // Stop the timer when the response is received
+    response.stream.transform(utf8.decoder).listen((value) {
+      // Parse the progress update from the server response
+      final progressUpdate = json.decode(value);
+      _progress = progressUpdate['progress'];
+      _currentFile = progressUpdate['current_file'];
+      notifyListeners();
+    }).onDone(() {
+      _progressTimer?.cancel();
+      _isProcessing = false;
+      notifyListeners();
+    });
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -149,14 +159,37 @@ class AuditoriaViewModel extends ChangeNotifier {
     } else if (response.statusCode == 401) {
       GoRouter.of(context).go('/logout');
     } else {
+      final responseBody = await response.stream.bytesToString();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error al procesar los archivos.'),
+        SnackBar(
+          content: Text('Error al procesar los archivos. ${response.reasonPhrase}. $responseBody'),
+          duration: const Duration(seconds: 10),
         ),
       );
     }
     _isProcessing = false;
     notifyListeners();
+  }
+
+  Future<void> _updateProgress(BuildContext context) async {
+    if (_resultId == null) return;
+
+    try {
+      final status = await getStatus(context: context, resultId: _resultId!);
+      final totalFiles = status['status']['total_files'];
+      final processedFiles = status['status']['total_files_processed'];
+
+      if (totalFiles != null && processedFiles != null && totalFiles > 0) {
+        _progress = processedFiles / totalFiles;
+      } else {
+        _progress = 0.0;
+      }
+
+      _currentFile = status['status']['current_file'] ?? '';
+      notifyListeners();
+    } catch (e) {
+      print('Error updating progress: $e');
+    }
   }
 
   Future<Map<String, dynamic>> getStatus({required BuildContext context, required String resultId}) async {
@@ -167,7 +200,25 @@ class AuditoriaViewModel extends ChangeNotifier {
   }
 
   String generateId({required String path}) {
-    // crear un id que sea el path del archivo quitanado los caracteres especiales y cambiando '/' por '_' 
     return path.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
+  }
+
+  void reset() {
+    _selectedDirectory = null;
+    _resultId = null;
+    _numFiles = 0;
+    _isProcessing = false;
+    _status = {};
+    _progress = 0.0;
+    _currentFile = '';
+    _selectedModels.clear();
+    _progressTimer?.cancel();
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _progressTimer?.cancel();
+    super.dispose();
   }
 }

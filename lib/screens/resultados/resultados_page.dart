@@ -122,6 +122,30 @@ class ResultadosPage extends StatelessWidget {
                                     ],
                                   ),
                                   const SizedBox(height: 10),
+
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.smart_toy,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondary,
+                                        size: 15,
+                                      ),
+
+                                      const SizedBox(width: 5),
+
+                                      Text(
+                                        'Modelos AI: ${viewModel.results[index]['status']['models']}.'.replaceAll(',', ', '),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 5),
+
                                   Row(
                                     children: [
                                       Icon(

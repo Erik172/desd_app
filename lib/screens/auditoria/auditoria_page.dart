@@ -16,6 +16,12 @@ class AuditoriaPage extends StatelessWidget {
         builder: (context, viewModel, child) {
           return BasePageLayout(
             title: 'Auditoria',
+            floatingActionButton: FloatingActionButton(
+              onPressed: () {
+                viewModel.reset();
+              },
+              child: const Icon(Icons.refresh),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(40),
               child: SingleChildScrollView(
@@ -105,13 +111,13 @@ class AuditoriaPage extends StatelessWidget {
                             children: <Widget>[
                               Text(
                                 'ID de los resultados: ',
-                                style: Theme.of(context).textTheme.titleMedium,
+                                style: Theme.of(context).textTheme.titleSmall,
                               ),
                               const SizedBox(width: 5),
                               Flexible(
                                 child: SelectableText(
                                   viewModel.resultId!,
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  style: Theme.of(context).textTheme.titleSmall,
                                 ),
                               ),
                               const SizedBox(width: 5),
@@ -130,8 +136,31 @@ class AuditoriaPage extends StatelessWidget {
                           ),
 
                           const SizedBox(height: 20),
-
                           
+                        ],
+                      ),
+
+                    if (viewModel.isProcessing)
+                      Column(
+                        children: [
+                          const SizedBox(height: 20),
+                          LinearProgressIndicator(
+                            value: viewModel.progress,
+                            backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                            color: Theme.of(context).colorScheme.primaryContainer,
+                            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                            minHeight: 21,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            '${(viewModel.progress * 100).toStringAsFixed(0)}% - ${viewModel.currentFile}',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
                         ],
                       ),
                   ],
