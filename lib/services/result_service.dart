@@ -27,9 +27,9 @@ class ResultService {
     }
   }
 
-  Future<Map<String, dynamic>> fetchResults({required BuildContext context, int page = 1, int perPage = 50, int? userId}) async {
+  Future<Map<String, dynamic>> fetchResults({required BuildContext context, int page = 1, int perPage = 50, int? userId, String? status}) async {
     final token = await _getToken();
-    final url = '${Constants.apiBaseUrl}/api/v1/results?page=$page&per_page=$perPage${userId != null ? '&user_id=$userId' : ''}';
+    final url = '${Constants.apiBaseUrl}/api/v1/results?page=$page&per_page=$perPage${userId != null ? '&user_id=$userId' : ''}&status=$status';
 
     final response = await http.get(
       Uri.parse(url),

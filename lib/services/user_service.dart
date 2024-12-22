@@ -1,10 +1,17 @@
 import 'dart:convert';
+import 'package:desd_app/services/auth_service.dart';
 import 'package:desd_app/utils/constants.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 
 class UserService {
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+  final AuthService authService = AuthService();
+  final BuildContext context;
+
+  UserService({required this.context});
 
   Future<String?> _getToken() async {
     return await secureStorage.read(key: 'token');
@@ -12,8 +19,8 @@ class UserService {
 
   void _handleResponse(http.Response response) {
     if (response.statusCode == 401) {
-      // Handle unauthorized error
-      throw Exception('Unauthorized');
+      authService.logout();
+      context.go('/login');
     } else if (response.statusCode != 200 && response.statusCode != 201) {
       print('Error: ${response.body}');
       throw Exception('Error: ${response.body}');

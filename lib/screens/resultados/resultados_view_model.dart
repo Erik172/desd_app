@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 class ResultadosViewModel extends ChangeNotifier {
   final BuildContext context;
   final ResultService resultService = ResultService();
-  final UserService userService = UserService();
+  late final UserService userService;
   final ScrollController scrollController = ScrollController();
   List<dynamic> results = [];
   int currentPage = 1;
@@ -20,6 +20,7 @@ class ResultadosViewModel extends ChangeNotifier {
   int? userId;
 
   ResultadosViewModel(this.context) {
+    userService = UserService(context: context);
     userService.me().then((user) {
       userId = user['id'];
       fetchResults(); // Fetch results for the new user

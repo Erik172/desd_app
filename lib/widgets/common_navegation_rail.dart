@@ -23,12 +23,13 @@ class CommonNavegationRail extends StatefulWidget {
 }
 
 class _CommonNavegationRailState extends State<CommonNavegationRail> {
-  final UserService _userService = UserService();
+  late final UserService _userService;
   bool isAdmin = false;
 
   @override
   void initState() {
     super.initState();
+    _userService = UserService(context: context);
     _checkAdmin();
   }
 

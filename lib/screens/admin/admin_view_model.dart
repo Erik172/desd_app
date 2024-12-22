@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:desd_app/services/user_service.dart';
 
 class AdminViewModel extends ChangeNotifier {
-  final UserService _userService = UserService();
+  final UserService _userService;
+
+  AdminViewModel(BuildContext context) : _userService = UserService(context: context) {
+    getUsers();
+    getCurrentUser();
+  }
   List<dynamic> _users = [];
   Map<String, dynamic> _currentUser = {};
 
   List<dynamic> get users => _users;
   Map<String, dynamic> get currentUser => _currentUser;
 
-  AdminViewModel() {
-    getUsers();
-    getCurrentUser();
-  }
 
   Future<void> getUsers() async {
     try {

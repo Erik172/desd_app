@@ -158,11 +158,18 @@ class AuditoriaViewModel extends ChangeNotifier {
       );
     } else if (response.statusCode == 401) {
       GoRouter.of(context).go('/logout');
-    } else {
+    } else if (response.statusCode == 422) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Este directorio ya se está procesando.'),
+          duration: Duration(seconds: 10),
+        ),
+      );
+    }else {
       final responseBody = await response.stream.bytesToString();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al procesar los archivos. ${response.reasonPhrase}. $responseBody'),
+          content: Text('Error al procesar los archivos: $responseBody'),
           duration: const Duration(seconds: 10),
         ),
       );

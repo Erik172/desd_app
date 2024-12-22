@@ -3,6 +3,7 @@ import 'package:desd_app/screens/user/add_user_form.dart';
 import 'package:desd_app/widgets/base_page_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -15,7 +16,7 @@ class _AdminPageState extends State<AdminPage> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => AdminViewModel(),
+      create: (context) => AdminViewModel(context),
       child: Consumer<AdminViewModel>(
         builder: (context, viewModel, child) {
           return BasePageLayout(
@@ -26,25 +27,41 @@ class _AdminPageState extends State<AdminPage> {
                 children: [
                   Expanded(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AddUserForm(
-                                  onAddUser: (name, email, passwod) {
-                                    viewModel.createUser({
-                                      'name': name,
-                                      'email': email,
-                                      'password': passwod,
-                                    });
-                                  },
-                                );
-                              },
-                            );
-                          },
-                          child: const Text('Add User'),
+                        Text(
+                          'Hello, ${viewModel.currentUser['name'] ?? ''}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Text(
+                          viewModel.currentUser['email'] ?? '',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.secondary,
+                            fontSize: 10,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AddUserForm(
+                                    onAddUser: (name, email, passwod) {
+                                      viewModel.createUser({
+                                        'name': name,
+                                        'email': email,
+                                        'password': passwod,
+                                      });
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                            child: const Text('Add User'),
+                          ),
                         ),
                       ],
                     ),
@@ -54,6 +71,9 @@ class _AdminPageState extends State<AdminPage> {
                       itemCount: viewModel.users.length,
                       itemBuilder: (context, index) {
                         final user = viewModel.users[index];
+                        final DateTime createdAt = DateTime.parse(user['created_at']);
+                        final String formattedDate = DateFormat('dd/MM/yyyy HH:mm').format(createdAt);
+
                         return Column(
                           children: [
                             Row(
@@ -68,9 +88,7 @@ class _AdminPageState extends State<AdminPage> {
                                           user['name'],
                                           style: Theme.of(context).textTheme.titleMedium,
                                         ),
-
                                         const SizedBox(width: 5),
-
                                         if (user['is_admin'])
                                           const Icon(
                                             Icons.admin_panel_settings,
@@ -81,6 +99,13 @@ class _AdminPageState extends State<AdminPage> {
                                     ),
                                     Text(
                                       user['email'],
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.secondary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Created at: $formattedDate',
                                       style: TextStyle(
                                         color: Theme.of(context).colorScheme.secondary,
                                         fontSize: 12,
