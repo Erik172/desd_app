@@ -1,17 +1,21 @@
-// ignore: depend_on_referenced_packages
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter/material.dart';
 import 'package:desd_app/routes/app_router.dart';
 import 'package:desd_app/providers/providers.dart';
 import 'package:provider/provider.dart';
+import 'package:desd_app/utils/constants.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
-  runApp(const MyApp());
+  final apiBaseUrl = await Constants.apiBaseUrl;
+  runApp(MyApp(apiBaseUrl: apiBaseUrl));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String apiBaseUrl;
+
+  const MyApp({super.key, required this.apiBaseUrl});
 
   @override
   Widget build(BuildContext context) {

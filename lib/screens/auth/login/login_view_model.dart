@@ -41,7 +41,7 @@ class LoginViewModel extends ChangeNotifier {
 
     try {
       final response = await http.post(
-        Uri.parse('${Constants.apiBaseUrl}/api/v1/auth/login'),
+        Uri.parse('${await Constants.apiBaseUrl}/api/v1/auth/login'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },

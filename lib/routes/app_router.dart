@@ -55,7 +55,7 @@ final router = GoRouter(
     final authService = AuthService();
     final isLoggedIn = await authService.isLoggedIn();
 
-    final publicRoutes = {'/login'};
+    final publicRoutes = {'/login', '/configuracion'};
 
     if (!isLoggedIn && !publicRoutes.contains(state.matchedLocation)) {
       return '/login';

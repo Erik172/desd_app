@@ -22,14 +22,13 @@ class ResultService {
       context.go('/logout');
       throw Exception('Unauthorized');
     } else if (response.statusCode != 200) {
-      print('Error: ${response.body}');
       throw Exception('Error: ${response.body}');
     }
   }
 
   Future<Map<String, dynamic>> fetchResults({required BuildContext context, int page = 1, int perPage = 50, int? userId, String? status}) async {
     final token = await _getToken();
-    final url = '${Constants.apiBaseUrl}/api/v1/results?page=$page&per_page=$perPage${userId != null ? '&user_id=$userId' : ''}&status=$status';
+    final url = '${await Constants.apiBaseUrl}/api/v1/results?page=$page&per_page=$perPage${userId != null ? '&user_id=$userId' : ''}&status=$status';
 
     final response = await http.get(
       Uri.parse(url),
@@ -45,7 +44,7 @@ class ResultService {
 
   Future<void> downloadResult({required BuildContext context, required String collectionId}) async {
     final token = await _getToken();
-    final url = '${Constants.apiBaseUrl}/api/v1/results/$collectionId/export';
+    final url = '${await Constants.apiBaseUrl}/api/v1/results/$collectionId/export';
 
     final response = await http.get(
       Uri.parse(url),
@@ -76,7 +75,6 @@ class ResultService {
       if (outputFile != null) {
         final file = io.File(outputFile);
         await file.writeAsBytes(response.bodyBytes);
-        print('File saved to: $outputFile');
       } else {
         print('File not saved');
       }
@@ -85,7 +83,7 @@ class ResultService {
 
   Future<void> deleteResult({required BuildContext context, required String collectionId}) async {
     final token = await _getToken();
-    final url = '${Constants.apiBaseUrl}/api/v1/results/$collectionId';
+    final url = '${await Constants.apiBaseUrl}/api/v1/results/$collectionId';
 
     final response = await http.delete(
       Uri.parse(url),
@@ -99,7 +97,7 @@ class ResultService {
 
   Future<Map<String, dynamic>> getResultStatus({required BuildContext context, required String collectionId}) async {
     final token = await _getToken();
-    final url = '${Constants.apiBaseUrl}/api/v1/results/$collectionId';
+    final url = '${await Constants.apiBaseUrl}/api/v1/results/$collectionId';
 
     final response = await http.get(
       Uri.parse(url),

@@ -81,10 +81,10 @@ class _CommonNavegationRailState extends State<CommonNavegationRail> {
                 ),
                 label: Text('Resultados'),
               ),
-              // NavigationRailDestination(
-              //   icon: Icon(Icons.settings),
-              //   label: Text('Configuracion'),
-              // ),
+              NavigationRailDestination(
+                icon: Icon(Icons.settings),
+                label: Text('Configuracion'),
+              ),
             ],
             trailing: isAdmin
                 ? IconButton(

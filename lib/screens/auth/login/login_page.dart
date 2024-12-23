@@ -1,5 +1,6 @@
 import 'package:desd_app/screens/auth/login/login_view_model.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class LoginPage extends StatelessWidget {
@@ -86,6 +87,16 @@ class LoginPage extends StatelessWidget {
                             ),
                             if (viewModel.isLoading) const CircularProgressIndicator(),
                             if (viewModel.errorMessage != null) Text(viewModel.errorMessage!),
+
+                            const SizedBox(height: 20),
+
+                            TextButton.icon(
+                              onPressed: () {
+                                context.push('/configuracion');
+                              },
+                              icon: const Icon(Icons.settings),
+                              label: const Text('Configuracion'),
+                            ),
                           ],
                         ),
                       ),

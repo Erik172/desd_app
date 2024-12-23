@@ -15,7 +15,7 @@ class NavigationProvider extends ChangeNotifier {
   int get selectedIndex => _selectedIndex;
 
   void onItemTapped(BuildContext context, int index) {
-    if (_selectedIndex == index) return; // Do nothing if the same index is selected
+    // if (_selectedIndex == index) return; // Do nothing if the same index is selected
 
     _selectedIndex = index;
     notifyListeners();
