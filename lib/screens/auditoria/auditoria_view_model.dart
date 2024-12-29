@@ -113,7 +113,7 @@ class AuditoriaViewModel extends ChangeNotifier {
       return;
     }
 
-    final uri = Uri.parse('${Constants.apiBaseUrl}/api/v1/desd');
+    final uri = Uri.parse('${await Constants.apiBaseUrl}/api/v1/desd');
 
     final request = http.MultipartRequest('POST', uri);
     request.headers['Authorization'] = 'Bearer $token';
