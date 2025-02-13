@@ -28,11 +28,11 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      'Bienvenido, ${viewModel.user['name'] ?? ''}',
+                      'Bienvenido, ${viewModel.userInfo['username'] ?? ''}',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     Text(
-                      viewModel.user['email'] ?? '',
+                      viewModel.userInfo['email'] ?? '',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: Theme.of(context).colorScheme.secondary,
                       ),

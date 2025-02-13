@@ -109,7 +109,7 @@ class ResultadosPage extends StatelessWidget {
                                       const SizedBox(width: 10),
                                       Flexible(
                                         child: Text(
-                                          'Ultima Actualizacion: ${viewModel.formatDate(viewModel.results[index]['status']['last_updated_at'])}',
+                                          'Ultima Actualizacion: ${viewModel.formatDate(viewModel.results[index]['status']['last_updated'])}',
                                           style: Theme.of(context)
                                               .textTheme
                                               .bodySmall
@@ -157,7 +157,7 @@ class ResultadosPage extends StatelessWidget {
                                       ),
                                       const SizedBox(width: 5),
                                       Text(
-                                        'Duración: ${viewModel.calculateDuration(viewModel.results[index]['created_at'], viewModel.results[index]['status']['last_updated_at'])}',
+                                        'Duración: ${viewModel.calculateDuration(viewModel.results[index]['created_at'], viewModel.results[index]['status']['last_updated'])}',
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodySmall,

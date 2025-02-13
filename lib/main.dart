@@ -1,3 +1,4 @@
+// ignore: depend_on_referenced_packages
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter/material.dart';
 import 'package:desd_app/routes/app_router.dart';

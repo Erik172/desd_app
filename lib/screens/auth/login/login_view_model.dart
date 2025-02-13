@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'dart:async';
 import 'package:desd_app/models/login_model.dart';
 import 'package:desd_app/utils/constants.dart';
 import 'package:flutter/material.dart';
@@ -9,22 +9,38 @@ import 'package:http/http.dart' as http;
 
 class LoginViewModel extends ChangeNotifier {
   final BuildContext context;
-  final TextEditingController emailController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   bool isLoading = false;
   String? errorMessage;
 
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  late final FlutterSecureStorage _secureStorage;
 
-  LoginViewModel(this.context);
+  LoginViewModel(this.context) {
+    _secureStorage = const FlutterSecureStorage();
+  }
 
-  void showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+  void _showSnackBar(String message) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+  Future<void> _handleResponse(http.Response response) async {
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final String token = data['access_token'];
+
+      await _secureStorage.write(key: 'token', value: token);
+      if (context.mounted) context.go('/');
+    } else if (response.statusCode == 401) {
+      errorMessage = 'Invalid email or password';
+    } else {
+      errorMessage = 'An error occurred. Please try again later';
+    }
   }
 
   Future<void> login() async {
@@ -35,38 +51,32 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
 
     final loginModel = LoginModel(
-      email: emailController.text,
-      password: passwordController.text,
+      username: usernameController.text.trim(),
+      password: passwordController.text.trim(),
     );
 
     try {
-      final response = await http.post(
-        Uri.parse('${await Constants.apiBaseUrl}/api/v1/auth/login'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(loginModel.toJson()),
-      );
+      final response = await http
+          .post(
+            Uri.parse('${await Constants.apiBaseUrl}/api/v1/auth'),
+            headers: {'Content-Type': 'application/json; charset=UTF-8'},
+            body: jsonEncode(loginModel.toJson()),
+          )
+          .timeout(const Duration(seconds: 10));
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final String token = data['access_token'];
+      await _handleResponse(response);
 
-        await _secureStorage.write(key: 'token', value: token);
-
-        // ignore: use_build_context_synchronously
-        context.go('/');
-
-      } else if (response.statusCode == 401) {
-        errorMessage = 'Invalid email or password';
-        showSnackBar(errorMessage!);
-      } else {
-        errorMessage = 'An error occurred. Please try again later';
-        showSnackBar(errorMessage!);
-      }
+      if (errorMessage != null) _showSnackBar(errorMessage!);
+    } on TimeoutException {
+      errorMessage = 'Request timed out. Please check your connection.';
+      _showSnackBar(errorMessage!);
+    } on FormatException {
+      errorMessage = 'Invalid response format from server.';
+      _showSnackBar(errorMessage!);
     } catch (e) {
-      errorMessage = 'An error occurred. Please try again later: $e';
-      showSnackBar(errorMessage!);
+      errorMessage = 'An error occurred: $e';
+      debugPrint('Login error: $e');
+      _showSnackBar(errorMessage!);
     } finally {
       isLoading = false;
       notifyListeners();

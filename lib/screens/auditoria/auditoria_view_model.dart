@@ -8,10 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class AuditoriaViewModel extends ChangeNotifier {
-  final FileService _fileService = FileService();
+  late final FileService _fileService;
+  late final FlutterSecureStorage _secureStorage;
+
   String? _selectedDirectory;
   String? _resultId;
   int _numFiles = 0;
@@ -20,8 +21,15 @@ class AuditoriaViewModel extends ChangeNotifier {
   double _progress = 0.0;
   String _currentFile = '';
 
-  final List<String> _models = ['Rotacion', 'Inclinacion', 'Corte informacion'];
+  final List<String> _models = ['Rotacion', 'Inclinacion', 'Corte informacion', 'Legibilidad'];
   final List<String> _selectedModels = [];
+
+  final Map<String, String> _modelNamesMap = {
+    'Rotacion': 'rode',
+    'Inclinacion': 'tilde',
+    'Corte informacion': 'cude',
+    'Legibilidad': 'legibility',
+  };
 
   Timer? _progressTimer;
 
@@ -35,13 +43,13 @@ class AuditoriaViewModel extends ChangeNotifier {
   double get progress => _progress;
   String get currentFile => _currentFile;
 
-  void toggleModelSelection(String model) {
-    if (_selectedModels.contains(model)) {
-      _selectedModels.remove(model);
-    } else {
-      _selectedModels.add(model);
-    }
+  AuditoriaViewModel() {
+    _fileService = FileService();
+    _secureStorage = const FlutterSecureStorage();
+  }
 
+  void toggleModelSelection(String model) {
+    _selectedModels.contains(model) ? _selectedModels.remove(model) : _selectedModels.add(model);
     notifyListeners();
   }
 
@@ -52,158 +60,133 @@ class AuditoriaViewModel extends ChangeNotifier {
     final directory = Directory(selectedDirectory);
     if (!directory.existsSync()) return;
 
-    final files = directory.listSync(recursive: true, followLinks: false);
+    final files = await directory.list(recursive: true, followLinks: false).toList();
 
     _selectedDirectory = selectedDirectory;
     _numFiles = files.length;
     notifyListeners();
   }
 
-  Future<void> processFiles(BuildContext context) async {
-    if (_selectedDirectory == null) {
+  void _showSnackBar(BuildContext context, String message, {int duration = 3}) {
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Seleccione un directorio primero.'),
+        SnackBar(
+          content: Text(message),
+          duration: Duration(seconds: duration),
         ),
       );
+    }
+  }
+
+  Future<void> processFiles(BuildContext context) async {
+    if (_selectedDirectory == null) {
+      _showSnackBar(context, 'Seleccione un directorio primero.');
       return;
     }
 
     if (_selectedModels.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Seleccione al menos un modelo.'),
-        ),
-      );
+      _showSnackBar(context, 'Seleccione al menos un modelo.');
       return;
     }
 
     _isProcessing = true;
     notifyListeners();
 
-    // Start the timer to update progress every second
-    _progressTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _updateProgress(context);
-    });
+    // Iniciar temporizador de progreso
+    _progressTimer = Timer.periodic(const Duration(seconds: 1), (timer) => _updateProgress(context));
 
-    const FlutterSecureStorage secureStorage = FlutterSecureStorage();
-    final String? token = await secureStorage.read(key: 'token');
+    final token = await _secureStorage.read(key: 'token');
 
-    final files = Directory(_selectedDirectory!).listSync(recursive: true, followLinks: false);
-    final allowedExtensions = ['pdf', 'jpg', 'png', 'tif', 'tiff'];
-    final filteredFiles = files.where((file) {
-      final extension = file.path.split('.').last.toLowerCase();
-      return allowedExtensions.contains(extension);
-    }).toList();
-    final filesPaths = filteredFiles.map((file) => file.path).toList();
+    final files = await Directory(_selectedDirectory!).list(recursive: true, followLinks: false).toList();
+    final allowedExtensions = {'pdf', 'jpg', 'png', 'tif', 'tiff'};
+    final filesPaths = files
+        .where((file) => allowedExtensions.contains(file.path.split('.').last.toLowerCase()))
+        .map((file) => file.path)
+        .toList();
 
     _numFiles = filesPaths.length;
     notifyListeners();
 
-    // Comprimir los archivos en un archivo ZIP
+    // Comprimir archivos
     final zipFilePath = await _fileService.createZip(files: filesPaths);
     if (zipFilePath == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error al comprimir los archivos.'),
-        ),
-      );
+      _showSnackBar(context, 'Error al comprimir los archivos.');
       _isProcessing = false;
       notifyListeners();
       return;
     }
 
-    final uri = Uri.parse('${await Constants.apiBaseUrl}/api/v1/desd');
+    final uri = Uri.parse('${await Constants.apiBaseUrl}/api/v1/worker');
+    final request = http.MultipartRequest('POST', uri)
+      ..headers['Authorization'] = 'Bearer $token'
+      ..fields['models'] = _selectedModels.map((model) => _modelNamesMap[model]!).join(',')
+      ..fields['task_id'] = generateId(path: _selectedDirectory!)
+      ..files.add(await _createMultipartFile(zipFilePath));
 
-    final request = http.MultipartRequest('POST', uri);
-    request.headers['Authorization'] = 'Bearer $token';
-    request.fields['models'] = _selectedModels.map((model) => model.toLowerCase()).join(',');
-    request.fields['result_id'] = generateId(path: _selectedDirectory!);
-
-    _resultId = request.fields['result_id'];
+    _resultId = request.fields['task_id'];
     notifyListeners();
 
-    // Añadir el archivo ZIP al request
-    final zipFile = File(zipFilePath);
-    final fileStream = http.ByteStream(zipFile.openRead());
-    final length = await zipFile.length();
-    final multipartFile = http.MultipartFile(
-      'files',
-      fileStream,
-      length,
-      filename: File(zipFilePath).uri.pathSegments.last,
-    );
-    request.files.add(multipartFile);
-
-    final response = await request.send();
-
-    // Stop the timer when the response is received
-    response.stream.transform(utf8.decoder).listen((value) {
-      // Parse the progress update from the server response
-      final progressUpdate = json.decode(value);
-      _progress = progressUpdate['progress'];
-      _currentFile = progressUpdate['current_file'];
-      notifyListeners();
-    }).onDone(() {
-      _progressTimer?.cancel();
+    try {
+      final response = await request.send();
+      _handleResponse(response, context);
+    } on TimeoutException {
+      _showSnackBar(context, 'Request timed out. Please check your connection.');
+    } on SocketException {
+      _showSnackBar(context, 'Network error. Check your connection.');
+    } on HttpException catch (e) {
+      _showSnackBar(context, 'HTTP error: $e');
+    } catch (e) {
+      debugPrint('Unexpected error: $e');
+      _showSnackBar(context, 'Unexpected error occurred.');
+    } finally {
       _isProcessing = false;
+      _progressTimer?.cancel();
       notifyListeners();
-    });
-
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Auditoría procesada con éxito. ID: $_resultId'),
-        ),
-      );
-    } else if (response.statusCode == 401) {
-      GoRouter.of(context).go('/logout');
-    } else if (response.statusCode == 422) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Este directorio ya se está procesando.'),
-          duration: Duration(seconds: 10),
-        ),
-      );
-    }else {
-      final responseBody = await response.stream.bytesToString();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al procesar los archivos: $responseBody'),
-          duration: const Duration(seconds: 10),
-        ),
-      );
     }
-    _isProcessing = false;
-    notifyListeners();
+  }
+
+  Future<http.MultipartFile> _createMultipartFile(String filePath) async {
+    final file = File(filePath);
+    return http.MultipartFile(
+      'files',
+      file.openRead(),
+      await file.length(),
+      filename: file.uri.pathSegments.last,
+    );
+  }
+
+  Future<void> _handleResponse(http.StreamedResponse response, BuildContext context) async {
+    final responseBody = await response.stream.bytesToString();
+
+    if (response.statusCode == 202) {
+      _showSnackBar(context, 'Auditoría Agregada al sistema. Puede revisar el progreso en la sección de resultados.');
+    } else if (response.statusCode == 401) {
+      if (context.mounted) context.go('/logout');
+    } else if (response.statusCode == 422) {
+      _showSnackBar(context, 'Este directorio ya se está procesando.', duration: 10);
+    } else {
+      _showSnackBar(context, 'Error al procesar los archivos: $responseBody', duration: 10);
+    }
   }
 
   Future<void> _updateProgress(BuildContext context) async {
     if (_resultId == null) return;
 
     try {
-      final status = await getStatus(context: context, resultId: _resultId!);
+      final status = await getStatus(context, _resultId!);
       final totalFiles = status['status']['total_files'];
       final processedFiles = status['status']['total_files_processed'];
 
-      if (totalFiles != null && processedFiles != null && totalFiles > 0) {
-        _progress = processedFiles / totalFiles;
-      } else {
-        _progress = 0.0;
-      }
-
+      _progress = (totalFiles != null && processedFiles != null && totalFiles > 0) ? processedFiles / totalFiles : 0.0;
       _currentFile = status['status']['current_file'] ?? '';
       notifyListeners();
     } catch (e) {
-      print('Error updating progress: $e');
+      debugPrint('Error updating progress: $e');
     }
   }
 
-  Future<Map<String, dynamic>> getStatus({required BuildContext context, required String resultId}) async {
-    final ResultService resultService = ResultService();
-    final response = await resultService.getResultStatus(context: context, collectionId: resultId);
-
-    return response;
+  Future<Map<String, dynamic>> getStatus(BuildContext context, String resultId) async {
+    return await ResultService().getResultStatus(context: context, collectionId: resultId);
   }
 
   String generateId({required String path}) {

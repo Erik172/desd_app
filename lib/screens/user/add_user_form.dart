@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AddUserForm extends StatefulWidget {
-  final Function(String, String, String) onAddUser;
+  final Function(String, String) onAddUser;
 
   const AddUserForm({super.key, required this.onAddUser});
 
@@ -12,8 +12,7 @@ class AddUserForm extends StatefulWidget {
 
 class _AddUserFormState extends State<AddUserForm> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
   @override
@@ -26,36 +25,14 @@ class _AddUserFormState extends State<AddUserForm> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             TextFormField(
-              controller: _nameController,
+              controller: _usernameController,
               decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(15)),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a name';
-                }
-                return null;
-              },
-            ),
-
-            const SizedBox(height: 20),
-
-            TextFormField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                  labelText: 'Email',
+                  labelText: 'Username',
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(15)))),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter an email';
-                } else if (!value.contains('@')) {
-                  return 'Please enter a valid email';
-                } else if (!value.contains('.')) {
-                  return 'Please enter a valid email';
+                  return 'Please enter an username';
                 }
                 return null;
               },
@@ -89,7 +66,7 @@ class _AddUserFormState extends State<AddUserForm> {
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              widget.onAddUser(_nameController.text, _emailController.text, _passwordController.text);
+              widget.onAddUser(_usernameController.text, _passwordController.text);
               Navigator.of(context).pop();
             }
           },

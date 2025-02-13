@@ -146,7 +146,7 @@ class ResultadosViewModel extends ChangeNotifier {
         userId: userId,
       );
 
-      totalResults = response['total'];
+      totalResults = response['total_results'];
       // Actualiza los resultados visibles, manteniendo las páginas anteriores intactas
       final updatedResults = response['results'];
       final startIndex = (currentPage - 1) * 50;
@@ -220,6 +220,8 @@ class ResultadosViewModel extends ChangeNotifier {
 
   Color getStatusColor(String status, BuildContext context) {
     switch (status) {
+      case 'UPLOADING':
+        return Colors.purple;
       case 'COMPLETED':
         return Colors.green;
       case 'RUNNING':

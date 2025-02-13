@@ -37,18 +37,16 @@ class LoginPage extends StatelessWidget {
                             const SizedBox(height: 20),
 
                             TextFormField(
-                              controller: viewModel.emailController,
+                              controller: viewModel.usernameController,
                               decoration: const InputDecoration(
-                                labelText: 'Email',
+                                labelText: 'Username',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.all(Radius.circular(15))
                                 )
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter your email';
-                                } else if (!value.contains('@')) {
-                                  return 'Please enter a valid email';
+                                  return 'Please enter your username';
                                 }
 
                                 return null;

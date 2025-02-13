@@ -1,17 +1,16 @@
-// ignore_for_file: use_build_context_synchronously
-import 'dart:io' as io;
 import 'dart:convert';
+
 import 'package:desd_app/utils/constants.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:universal_html/html.dart' as html;
 
-class ResultService {
+class IpService {
   final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+  final BuildContext context;
+
+  IpService({required this.context});
 
   Future<String?> _getToken() async {
     return await secureStorage.read(key: 'token');
@@ -26,53 +25,18 @@ class ResultService {
     }
   }
 
-  Future<Map<String, dynamic>> fetchResults({
-    required BuildContext context,
-    int page = 1,
-    int perPage = 50,
-    int? userId,
-    String? status,
-  }) async {
+  Future<Map<String, dynamic>> fetchAllowedIps() async {
     final String baseUrl = await Constants.apiBaseUrl;
-    final String url = '$baseUrl/api/v1/task?status=$status';
-
-    return await _request(context, url, 'GET');
-  }
-
-  Future<void> downloadResult({
-    required BuildContext context,
-    required String collectionId,
-  }) async {
-    final String baseUrl = await Constants.apiBaseUrl;
-    final String url = '$baseUrl/api/v1/export/$collectionId';
+    final String url = '$baseUrl/api/v1/admin/allowed_ips';
 
     final response = await _request(context, url, 'GET', returnRawResponse: true) as http.Response;
 
-    if (kIsWeb) {
-      _downloadWeb(response.bodyBytes, collectionId);
-    } else {
-      await _downloadDesktop(response.bodyBytes, collectionId);
+    if (response.body.isEmpty) {
+      throw FormatException('Empty response body');
     }
-  }
 
-  Future<void> deleteResult({
-    required BuildContext context,
-    required String collectionId,
-  }) async {
-    final String baseUrl = await Constants.apiBaseUrl;
-    final String url = '$baseUrl/api/v1/task/$collectionId';
-
-    await _request(context, url, 'DELETE');
-  }
-
-  Future<Map<String, dynamic>> getResultStatus({
-    required BuildContext context,
-    required String collectionId,
-  }) async {
-    final String baseUrl = await Constants.apiBaseUrl;
-    final String url = '$baseUrl/api/v1/task/$collectionId';
-
-    return await _request(context, url, 'GET');
+    final List<dynamic> responseBody = json.decode(response.body);
+    return {'allowed_ips': responseBody};
   }
 
   // --------------------------------
@@ -87,7 +51,6 @@ class ResultService {
   }) async {
     final String? token = await _getToken();
     final headers = {'Authorization': 'Bearer $token'};
-    print('Headers: $headers');
 
     http.Response response;
     if (method == 'GET') {
@@ -112,30 +75,6 @@ class ResultService {
       return json.decode(response.body);
     } catch (e) {
       throw FormatException('Error decoding response body: ${response.body}');
-    }
-  }
-
-  void _downloadWeb(List<int> bytes, String fileName) {
-    final blob = html.Blob([bytes]);
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    // ignore: unused_local_variable
-    final anchor = html.AnchorElement(href: url)
-      ..setAttribute('download', '$fileName.csv')
-      ..click();
-    html.Url.revokeObjectUrl(url);
-  }
-
-  Future<void> _downloadDesktop(List<int> bytes, String fileName) async {
-    final String? outputFile = await FilePicker.platform.saveFile(
-      dialogTitle: 'Guardar archivo como',
-      fileName: '$fileName.csv',
-    );
-
-    if (outputFile != null) {
-      final file = io.File(outputFile);
-      await file.writeAsBytes(bytes);
-    } else {
-      debugPrint('File not saved');
     }
   }
 }

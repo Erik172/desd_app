@@ -5,89 +5,46 @@ class ModelosCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Row(
               children: [
-                Icon(
-                  Icons.smart_toy,
-                  color: Theme.of(context).colorScheme.secondary,
-                  size: 22,
-                ),
+                Icon(Icons.smart_toy, color: colorScheme.secondary, size: 22),
                 const SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    'Modelos de AI',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
+                Text('Modelos de AI', style: textTheme.titleMedium),
               ],
             ),
             const SizedBox(height: 20),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Column(
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.rotate_left,
-                      color: Theme.of(context).colorScheme.secondary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: Text(
-                        'RoDe - Detección de Rotacion',
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.document_scanner,
-                      color: Theme.of(context).colorScheme.secondary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: Text(
-                        'TilDe - Detección de inclinación',
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.crop,
-                      color: Theme.of(context).colorScheme.secondary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: Text(
-                        'CuDe - Detección de corte de información',
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                    ),
-                  ],
-                ),
+                _buildModelItem(Icons.rotate_left, 'RoDe - Detección de Rotación', colorScheme, textTheme),
+                _buildModelItem(Icons.document_scanner, 'TilDe - Detección de Inclinación', colorScheme, textTheme),
+                _buildModelItem(Icons.crop, 'CuDe - Detección de Corte de Información', colorScheme, textTheme),
+                _buildModelItem(Icons.loupe, 'Legibilty - Detección de Documentos inlegibles', colorScheme, textTheme),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildModelItem(IconData icon, String text, ColorScheme colorScheme, TextTheme textTheme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, color: colorScheme.secondary, size: 20),
+          const SizedBox(width: 5),
+          Text(text, style: textTheme.labelMedium),
+        ],
       ),
     );
   }

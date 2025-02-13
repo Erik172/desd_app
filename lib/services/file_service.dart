@@ -5,28 +5,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 class FileService {
-  /// Selecciona múltiples archivos de tipos específicos utilizando el FilePicker.
-  /// 
-  /// Retorna una lista de rutas de archivos seleccionados o `null` si no se seleccionaron archivos.
-  /// 
-  /// Tipos de archivos permitidos: `pdf`, `png`, `jpg`, `tif`, `tiff`, `jpeg`.
-  /// 
-  /// Maneja cualquier excepción que ocurra durante la selección de archivos y 
-  /// imprime un mensaje de error en la consola.
-  /// 
-  /// Ejemplo de uso:
-  /// 
-  /// ```dart
-  /// List<String?>? archivos = await pickFiles();
-  /// if (archivos != null) {
-  ///   // Procesar archivos seleccionados
-  /// } else {
-  ///   // No se seleccionaron archivos
-  /// }
-  /// ```
-  /// 
-  /// Retorna:
-  /// - `List<String?>?`: Lista de rutas de archivos seleccionados o `null` si no se seleccionaron archivos.
   Future<List<String?>?> pickFiles() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -47,14 +25,6 @@ class FileService {
     }
   }
 
-  /// Selecciona un directorio utilizando el FilePicker y devuelve la ruta del directorio seleccionado.
-  /// 
-  /// Retorna la ruta del directorio seleccionado como una cadena de texto, o `null` si no se selecciona ningún directorio.
-  /// 
-  /// En caso de error, imprime un mensaje de error y retorna `null`.
-  /// 
-  /// Returns:
-  ///   - `Future<String?>`: La ruta del directorio seleccionado o `null` si no se selecciona ningún directorio o ocurre un error.
   Future<String?> pickDirectory() async {
     try {
       String? directoryPath = await FilePicker.platform.getDirectoryPath();
@@ -71,18 +41,7 @@ class FileService {
     }
   }
 
-  /// Crea un archivo ZIP a partir de una lista de archivos proporcionada.
-  ///
-  /// Este método toma una lista de rutas de archivos y los comprime en un 
-  /// archivo ZIP. Devuelve la ruta del archivo ZIP creado o `null` si ocurre 
-  /// algún error.
-  ///
-  /// Parámetros:
-  /// - `files`: Una lista de rutas de archivos que se deben comprimir.
-  ///
-  /// Retorna:
-  /// - Una `Future` que resuelve a una cadena que representa la ruta del 
-  ///   archivo ZIP creado, o `null` si ocurre un error.
+
   Future<String?> createZip({required List<String> files}) async {
     try {
       // Create a new ZIP file
