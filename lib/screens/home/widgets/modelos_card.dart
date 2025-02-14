@@ -43,7 +43,9 @@ class ModelosCard extends StatelessWidget {
         children: [
           Icon(icon, color: colorScheme.secondary, size: 20),
           const SizedBox(width: 5),
-          Text(text, style: textTheme.labelMedium),
+          Expanded(
+            child: Text(text, style: textTheme.labelMedium),
+          ),
         ],
       ),
     );

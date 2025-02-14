@@ -87,7 +87,6 @@ class ResultService {
   }) async {
     final String? token = await _getToken();
     final headers = {'Authorization': 'Bearer $token'};
-    print('Headers: $headers');
 
     http.Response response;
     if (method == 'GET') {

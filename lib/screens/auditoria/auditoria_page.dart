@@ -35,7 +35,7 @@ class AuditoriaPage extends StatelessWidget {
                       const SizedBox(height: 20),
                       _ProcessButton(viewModel: viewModel),
                       if (viewModel.resultId != null) _ResultId(viewModel: viewModel),
-                      if (viewModel.isProcessing) _ProgressIndicator(viewModel: viewModel),
+                      if (viewModel.isProcessing) ProgressIndicatorWidget(viewModel: viewModel),
                     ],
                   ),
                 ),
@@ -147,33 +147,3 @@ class _ResultId extends StatelessWidget {
   }
 }
 
-class _ProgressIndicator extends StatelessWidget {
-  final AuditoriaViewModel viewModel;
-  const _ProgressIndicator({required this.viewModel});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        LinearProgressIndicator(
-          value: viewModel.progress,
-          backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-          color: Theme.of(context).colorScheme.primaryContainer,
-          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
-          minHeight: 21,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          '${(viewModel.progress * 100).toStringAsFixed(0)}% - ${viewModel.currentFile}',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ],
-    );
-  }
-}

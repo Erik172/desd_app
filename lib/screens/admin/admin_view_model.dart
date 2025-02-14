@@ -13,10 +13,7 @@ class AdminViewModel extends ChangeNotifier {
     getCurrentUser();
     getAllowedIps();
   }
-  // AdminViewModel(BuildContext context) : _userService = UserService(context: context) {
-  //   getUsers();
-  //   getCurrentUser();
-  // }
+
   List<dynamic> _users = [];
   Map<String, dynamic> _currentUser = {};
 
@@ -32,6 +29,24 @@ class AdminViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print('Error fetching allowed IPs: $e');
+    }
+  }
+
+  Future<void> addAllowedIp(String ip) async {
+    try {
+      await _ipService.addAllowedIp(ip);
+      getAllowedIps();
+    } catch (e) {
+      print('Error adding allowed IP: $e');
+    }
+  }
+
+  Future<void> deleteAllowedIp(int idIp) async {
+    try {
+      await _ipService.deleteAllowedIp(idIp);
+      getAllowedIps();
+    } catch (e) {
+      print('Error deleting allowed IP: $e');
     }
   }
 
@@ -69,8 +84,9 @@ class AdminViewModel extends ChangeNotifier {
   }
 
   void switchAdminRole(String userId) async {
-    final Map<String, dynamic> user;
+    Map<String, dynamic> user;
     user = await _userService.fetchUser(userId);
+    user = user..removeWhere((key, value) => ['username', 'password'].contains(key));
 
     user['is_admin'] = !user['is_admin'];
 

@@ -239,7 +239,10 @@ class _AdminPageState extends State<AdminPage> {
           color: Theme.of(context).colorScheme.error,
           splashRadius: 20,
           iconSize: 20,
-          onPressed: () {},
+          onPressed: () {
+            final idIp = viewModel.allowedIps['allowed_ips'].firstWhere((element) => element['ip'] == ip)['id'];
+            viewModel.deleteAllowedIp(idIp);
+          },
         ),
       ],
     );
@@ -265,11 +268,18 @@ class _AdminPageState extends State<AdminPage> {
           )
         : const Row(
             children: [
-              Text('Inactive '),
+              Text(
+                'Inactive ',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                ),
+              ),
+              
               Icon(
                 Icons.cancel,
                 color: Colors.red,
-                size: 16,
+                size: 12,
               ),
             ],
           );
@@ -309,6 +319,8 @@ class _AdminPageState extends State<AdminPage> {
             ),
             TextButton(
               onPressed: () {
+                viewModel.addAllowedIp(ipAddress);
+                Navigator.pop(context);
               },
               child: const Text('Add'),
             ),

@@ -23,7 +23,7 @@ class ResultadosCard extends StatelessWidget {
             const SizedBox(height: 20),
             _ResultRow(
               icon: Icons.upload,
-              color: Colors.grey,
+              color: Colors.purple,
               text: 'Subiendo',
               count: viewModel.numResultsUploading,
             ),

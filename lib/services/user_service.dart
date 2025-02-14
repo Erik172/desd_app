@@ -50,6 +50,9 @@ class UserService {
       case 'PUT':
         response = await http.put(Uri.parse(url), headers: headers, body: json.encode(body));
         break;
+      case 'PATCH':
+        response = await http.patch(Uri.parse(url), headers: headers, body: json.encode(body));
+        break;
       case 'DELETE':
         response = await http.delete(Uri.parse(url), headers: headers);
         break;
@@ -78,6 +81,8 @@ class UserService {
   }
 
   Future<Map<String, dynamic>> updateUser(String userId, Map<String, dynamic> user) async {
+    user = user..removeWhere((key, value) => ['id', 'created_at', 'updated_at', 'results'].contains(key));
+    print(user);
     final response = await _request(context, '${await Constants.apiBaseUrl}/api/v1/admin/user/$userId', 'PUT', body: user);
     _handleResponse(response);
     return json.decode(response.body);
