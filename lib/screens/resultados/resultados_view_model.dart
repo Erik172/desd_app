@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:async';
 import 'package:desd_app/services/result_service.dart';
 import 'package:desd_app/services/user_service.dart';
@@ -21,20 +19,22 @@ class ResultadosViewModel extends ChangeNotifier {
 
   ResultadosViewModel(this.context) {
     userService = UserService(context: context);
-    userService.me().then((user) {
-      userId = user['id'];
-      fetchResults(); // Fetch results for the new user
-    });
+    _initialize();
+  }
 
-    scrollController.addListener(() {
-      if (scrollController.position.pixels == scrollController.position.maxScrollExtent && hasMore) {
-        fetchMoreResults();
-      }
-    });
+  Future<void> _initialize() async {
+    final user = await userService.me();
+    userId = user['id'];
+    await fetchResults();
 
-    timer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      updateResults();
-    });
+    scrollController.addListener(_onScroll);
+    timer = Timer.periodic(const Duration(seconds: 2), (_) => updateResults());
+  }
+
+  void _onScroll() {
+    if (scrollController.position.pixels == scrollController.position.maxScrollExtent && hasMore) {
+      fetchMoreResults();
+    }
   }
 
   @override
@@ -44,20 +44,6 @@ class ResultadosViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  /// Obtiene los resultados de manera asíncrona.
-  /// 
-  /// Si la carga ya está en progreso (`isLoading` es verdadero), la función retorna inmediatamente.
-  /// 
-  /// La función establece `isLoading` a verdadero y notifica a los oyentes antes de intentar
-  /// obtener los resultados desde el servicio `resultService`. Si la solicitud es exitosa,
-  /// actualiza `totalResults`, `results` y `hasMore` con los datos obtenidos.
-  /// 
-  /// En caso de error, imprime un mensaje de error en la consola.
-  /// 
-  /// Finalmente, establece `isLoading` a falso y notifica a los oyentes.
-  /// 
-  /// Excepciones:
-  /// - Cualquier excepción lanzada durante la obtención de resultados se captura y se imprime.
   Future<void> fetchResults() async {
     if (isLoading) return;
 
@@ -66,36 +52,18 @@ class ResultadosViewModel extends ChangeNotifier {
 
     try {
       final response = await resultService.fetchResults(context: context, page: 1, userId: userId);
-      results = response['results']; // Actualizar la lista de resultados
-      totalResults = response['total'];
-      hasMore = currentPage < response['pages'];
+      results = response['results'] ?? [];
+      totalResults = response['total'] ?? 0;
+      hasMore = currentPage < (response['pages'] ?? 0);
       currentPage = 1;
     } catch (e) {
-      print('Error fetching results: $e');
+      _handleError('Error fetching results: $e');
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Obtiene más resultados de forma asíncrona.
-  ///
-  /// Si ya se está cargando (`isLoading` es verdadero) o no hay más resultados
-  /// (`hasMore` es falso), la función retorna inmediatamente.
-  ///
-  /// La función establece `isLoading` a verdadero y notifica a los oyentes.
-  /// Luego intenta obtener más resultados del servicio `resultService` usando
-  /// la página siguiente (`currentPage + 1`) y un número fijo de resultados por
-  /// página (`perPage: 50`).
-  ///
-  /// Si la solicitud es exitosa, actualiza `totalResults` con el total de
-  /// resultados obtenidos, agrega los nuevos resultados a la lista `results`,
-  /// actualiza `hasMore` para indicar si hay más páginas disponibles y
-  /// aumenta `currentPage`.
-  ///
-  /// Si ocurre un error durante la solicitud, se imprime un mensaje de error.
-  ///
-  /// Finalmente, establece `isLoading` a falso y notifica a los oyentes.
   Future<void> fetchMoreResults() async {
     if (isLoading || !hasMore) return;
 
@@ -104,33 +72,18 @@ class ResultadosViewModel extends ChangeNotifier {
 
     try {
       final response = await resultService.fetchResults(context: context, page: currentPage + 1, userId: userId);
-      totalResults = response['total'];
-      results.addAll(response['results']); // Agregar más resultados a la lista
-      hasMore = currentPage < response['pages'];
+      totalResults = response['total'] ?? 0;
+      results.addAll(response['results'] ?? []);
+      hasMore = currentPage < (response['pages'] ?? 0);
       currentPage++;
     } catch (e) {
-      print('Error fetching more results: $e');
+      _handleError('Error fetching more results: $e');
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Actualiza los resultados obtenidos del servicio de resultados.
-  /// 
-  /// Esta función se encarga de obtener los resultados de la página actual
-  /// y actualizar la lista de resultados visibles, manteniendo las páginas
-  /// anteriores intactas. Si ya se está cargando, la función retorna 
-  /// inmediatamente.
-  /// 
-  /// La función realiza las siguientes acciones:
-  /// - Establece el estado de carga a `true` y notifica a los oyentes.
-  /// - Intenta obtener los resultados de la página actual desde el servicio.
-  /// - Actualiza el total de resultados y los resultados visibles.
-  /// - Maneja cualquier error que ocurra durante la obtención de resultados.
-  /// - Establece el estado de carga a `false` y notifica a los oyentes.
-  /// 
-  /// En caso de error, se imprime un mensaje de error en la consola.
   Future<void> updateResults() async {
     if (isLoading) return;
 
@@ -138,19 +91,18 @@ class ResultadosViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Obtén solo la página actual y los resultados necesarios para ella
       final response = await resultService.fetchResults(
         context: context,
         page: currentPage,
-        perPage: 50, // Ajusta este valor según la cantidad que se muestra por página
+        perPage: 50,
         userId: userId,
       );
 
-      totalResults = response['total_results'];
-      // Actualiza los resultados visibles, manteniendo las páginas anteriores intactas
-      final updatedResults = response['results'];
+      totalResults = response['total_results'] ?? 0;
+      final updatedResults = response['results'] ?? [];
       final startIndex = (currentPage - 1) * 50;
       final endIndex = startIndex + updatedResults.length;
+
       if (startIndex < results.length) {
         results.replaceRange(
           startIndex,
@@ -160,13 +112,23 @@ class ResultadosViewModel extends ChangeNotifier {
       } else {
         results.addAll(updatedResults);
       }
-      hasMore = currentPage < response['pages'];
+      hasMore = currentPage < (response['pages'] ?? 0);
     } catch (e) {
-      print('Error updating results: $e');
+      _handleError('Error updating results: $e');
     } finally {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  void _handleError(String errorMessage) {
+    print(errorMessage);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(errorMessage),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   String formatDate(String dateString) {
@@ -174,19 +136,6 @@ class ResultadosViewModel extends ChangeNotifier {
     return DateFormat('dd MMM yyyy, hh:mm a').format(dateTime);
   }
 
-  /// Calcula la duración entre dos fechas dadas en formato de cadena.
-  ///
-  /// Toma dos fechas en formato de cadena, las convierte a objetos DateTime,
-  /// calcula la diferencia entre ellas y devuelve la duración en un formato
-  /// legible de horas, minutos y segundos.
-  ///
-  /// Parámetros:
-  /// - `startDate`: La fecha de inicio en formato de cadena (por ejemplo, "2023-01-01T12:00:00").
-  /// - `endDate`: La fecha de fin en formato de cadena (por ejemplo, "2023-01-01T14:30:45").
-  ///
-  /// Retorna:
-  /// - Una cadena que representa la duración en el formato 'Xh Ym Zs', donde X
-  ///   es el número de horas, Y es el número de minutos y Z es el número de segundos.
   String calculateDuration(String startDate, String endDate) {
     final DateTime startDateTime = DateTime.parse(startDate);
     final DateTime endDateTime = DateTime.parse(endDate);
@@ -200,23 +149,30 @@ class ResultadosViewModel extends ChangeNotifier {
   }
 
   Future<void> downloadResult({required String collectionId}) async {
-    await resultService.downloadResult(context: context, collectionId: collectionId);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Resultado descargado con éxito.'),
-      ),
-    );
+    try {
+      await resultService.downloadResult(context: context, collectionId: collectionId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Resultado descargado con éxito.'),
+        ),
+      );
+    } catch (e) {
+      _handleError('Error downloading result: $e');
+    }
   }
 
-  Future<void> deleteResult({required collectionId}) async {
-    await resultService.deleteResult(context: context, collectionId: collectionId);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Resultado eliminado con éxito.'),
-      ),
-    );
+  Future<void> deleteResult({required String collectionId}) async {
+    try {
+      await resultService.deleteResult(context: context, collectionId: collectionId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Resultado eliminado con éxito.'),
+        ),
+      );
+    } catch (e) {
+      _handleError('Error deleting result: $e');
+    }
   }
-
 
   Color getStatusColor(String status, BuildContext context) {
     switch (status) {
@@ -234,5 +190,4 @@ class ResultadosViewModel extends ChangeNotifier {
         return Theme.of(context).colorScheme.primary;
     }
   }
-
 }
