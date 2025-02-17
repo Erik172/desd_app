@@ -104,7 +104,7 @@ class ResultService {
     }
 
     if (response.body.isEmpty) {
-      throw FormatException('Empty response body');
+      return {}; // Return an empty map if the response body is empty
     }
 
     try {
