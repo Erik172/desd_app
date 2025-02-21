@@ -75,6 +75,10 @@ class _CommonNavegationRailState extends State<CommonNavegationRail> {
                 label: Text('Auditoria'),
               ),
               NavigationRailDestination(
+                icon: Icon(Icons.copy),
+                label: Text('Duplicados'),
+              ),
+              NavigationRailDestination(
                 icon: Badge(
                   // label: Text('2'),
                   child: Icon(Icons.task),

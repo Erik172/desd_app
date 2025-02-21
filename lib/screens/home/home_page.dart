@@ -1,4 +1,5 @@
 import 'package:desd_app/screens/home/home_view_model.dart';
+import 'package:desd_app/screens/home/widgets/algoritmos_card.dart';
 import 'package:desd_app/screens/home/widgets/modelos_card.dart';
 import 'package:desd_app/screens/home/widgets/resultados_card.dart';
 import 'package:desd_app/widgets/widgets.dart';
@@ -47,17 +48,29 @@ class _HomePageState extends State<HomePage> {
                               ResultadosCard(viewModel: viewModel,),
                               const SizedBox(height: 20),
                               const ModelosCard(),
+                              const SizedBox(height: 20),
+                              const AlgoritmosCard(),
                             ],
                           );
                         } else {
-                          // Pantalla grande: mostrar las tarjetas en una fila
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          // Pantalla grande: mostrar las tarjetas en dos filas
+                          return Column(
                             children: [
-                              Expanded(child: ResultadosCard(viewModel: viewModel,)),
-                              const SizedBox(width: 20),
-                              const Expanded(child: ModelosCard()),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(child: ResultadosCard(viewModel: viewModel,)),
+                                  const SizedBox(width: 20),
+                                  const Expanded(child: ModelosCard()),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              const Row(
+                                children: [
+                                  Expanded(child: AlgoritmosCard()),
+                                ],
+                              ),
                             ],
                           );
                         }

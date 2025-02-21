@@ -28,9 +28,12 @@ class NavigationProvider extends ChangeNotifier {
         context.go('/auditoria');
         break;
       case 2:
-        context.go('/resultados');
+        context.go('/duplicado');
         break;
       case 3:
+        context.go('/resultados');
+        break;
+      case 4:
         context.go('/configuracion');
         break;
       default:

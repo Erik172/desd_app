@@ -1,8 +1,7 @@
-import 'package:desd_app/screens/auditoria/auditoria_view_model.dart';
 import 'package:flutter/material.dart';
 
 class DirectoryPicker extends StatelessWidget {
-  final AuditoriaViewModel viewModel;
+  final viewModel;
   const DirectoryPicker({super.key, required this.viewModel});
 
   @override

@@ -2,6 +2,7 @@ import 'package:desd_app/screens/admin/admin_page.dart';
 import 'package:desd_app/screens/auditoria/auditoria_page.dart';
 import 'package:desd_app/screens/auth/login/login_page.dart';
 import 'package:desd_app/screens/config/config_page.dart';
+import 'package:desd_app/screens/duplicate/duplicate_page.dart';
 import 'package:desd_app/screens/home/home_page.dart';
 import 'package:desd_app/screens/resultados/resultados_page.dart';
 import 'package:desd_app/services/auth_service.dart';
@@ -34,6 +35,11 @@ final router = GoRouter(
     GoRoute(
       path: '/auditoria',
       builder: (context, state) => const AuditoriaPage(),
+    ),
+
+    GoRoute(
+      path: '/duplicado',
+      builder: (context, state) => const DuplicatePage(),
     ),
 
     GoRoute(
